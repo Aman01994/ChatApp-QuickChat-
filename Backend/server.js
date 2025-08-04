@@ -86,13 +86,13 @@ app.use('/api/message',messageRouter)
 // This is because socket.io needs to handle WebSocket connections, which require the HTTP server instance
 // And that is why we are using `server.listen` instead of `app.listen`. and in production we will use the PORT from environment variables.
 
-if(process.env.NODE_ENV === 'production') {
+if(process.env.NODE_ENV !== 'production') {
     const Port = process.env.PORT || 4000
-server.listen(Port, () => {
+    server.listen(Port, () => {
     console.log(`This server is running on ${Port}`)
 })
 }
 
-
+// Export the server for the vercel deployment
 export default server
 
