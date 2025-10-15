@@ -18,6 +18,60 @@ const ChatContainer = () => {
 
   const [messageInput, setMessageInput] = useState("")
 
+  // Robust online check: onlineUsers may be an array of ids, array of objects, a Set, or a map-like object
+  const isOnline = (() => {
+    if (!selectedUser) return false;
+    if (!onlineUsers) return false;
+    try {
+      const targetId = String(selectedUser._id);
+      if (onlineUsers instanceof Set) {
+        // coerce set items to strings
+        for (const v of onlineUsers) if (String(v) === targetId) return true;
+        return false;
+      }
+      if (Array.isArray(onlineUsers)) {
+        // array of ids or array of objects
+        if (onlineUsers.includes && onlineUsers.includes(selectedUser._id)) return true;
+        if (onlineUsers.includes && onlineUsers.includes(targetId)) return true;
+        return onlineUsers.some(u => {
+          if (!u) return false;
+          if (typeof u === 'string' || typeof u === 'number') return String(u) === targetId;
+          if (typeof u === 'object') return String(u._id || u.userId || u.id) === targetId;
+          return false;
+        });
+      }
+      // map-like: keys are ids => truthy value
+      if (typeof onlineUsers === 'object') {
+        if (onlineUsers[targetId]) return true;
+        // maybe keys are numbers or other types
+        for (const k of Object.keys(onlineUsers)) if (String(k) === targetId && onlineUsers[k]) return true;
+        return false;
+      }
+    } catch (err) {
+      // fallback
+      return false;
+    }
+    return false;
+  })();
+
+  // Debugging: log shape when selectedUser exists (development aid)
+  useEffect(() => {
+    if (!selectedUser) return;
+    try {
+      // Keep logs compact; stringify limited structures
+      const sample = {
+        selectedUserId: selectedUser._id,
+        onlineUsersType: Object.prototype.toString.call(onlineUsers),
+        onlineUsersLength: Array.isArray(onlineUsers) ? onlineUsers.length : onlineUsers ? Object.keys(onlineUsers).length : 0,
+        isOnline
+      };
+      // eslint-disable-next-line no-console
+      console.debug('[ChatContainer] online debug:', sample);
+    } catch (e) {
+      // ignore
+    }
+  }, [onlineUsers, selectedUser, isOnline]);
+
 
   const handleSendMessage = async (e)=>{
       e.preventDefault;
@@ -69,11 +123,9 @@ const ChatContainer = () => {
         {/* Chat box header  */}
         <div className='flex items-center border-b border-stone-500 mx-4 py-3 gap-3 '>
           <img src={selectedUser.profilePic ? selectedUser.profilePic :assets.avatar_icon  } alt="" className='w-8 rounded-full' />
-          <p className='flex-1 text-lg text-white flex items-center gap-2'>{selectedUser.fullName}
-            {
-              onlineUsers.includes(selectedUser._id) ?<span className='w-2 h-2 rounded-full bg-green-500'></span> :
-              null
-            } 
+          <p className='flex-1 text-lg text-white flex items-center gap-2'>
+            {selectedUser.fullName}
+            {isOnline && <span className='w-2 h-2 rounded-full bg-green-500' />}
           </p>
           <img onClick={()=>setSelectedUser(null)} src={assets.arrow_icon} className='max-w-7 md:hidden cursor-pointer' alt="" />
           <img src={assets.help_icon} className='hidden max-w-5 sm:hidden md:block cursor-pointer'  alt="" />

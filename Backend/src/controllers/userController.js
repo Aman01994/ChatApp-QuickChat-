@@ -10,9 +10,10 @@ export  const signup = async (req, res) => {
 
     try {
         // Validate input
-        if (!fullName || !email || !password || !bio) {
+        if (!fullName || !email || !password) {
             return res.json({ success: false, message: "Missing Details" });
         }
+        
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -29,7 +30,7 @@ export  const signup = async (req, res) => {
             fullName,
             email,
             password: hashPass,
-            bio
+            bio : "Hello I am using Social Media App"
         });
 
         const token = generateToken(newUser._id);
